@@ -2,8 +2,13 @@
 
 
 
+
+
 Filter::Filter()
 {
+	Point center(0, 0);
+	orientation.push_back(center);
+	orientation.push_back(center);
 }
 
 
@@ -16,7 +21,7 @@ void Filter::DetectFaceAndEyes(Mat frame,CascadeClassifier face_cascade, Cascade
 	
 	equalizeHist(frame, frame);
 	//-- Detect faces
-	face_cascade.detectMultiScale(frame, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+	face_cascade.detectMultiScale(frame, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(50, 50));
 	for (size_t i = 0; i < faces.size(); i++)
 	{
 		//-- In each face, detect eyes
@@ -25,7 +30,43 @@ void Filter::DetectFaceAndEyes(Mat frame,CascadeClassifier face_cascade, Cascade
 	}
 }
 
-Mat Filter::DetectAndDisplayFirstFilter(Mat frame,CascadeClassifier face_cascade,CascadeClassifier eye_cascade)
+Mat Filter::PutMask(Mat src,Mat mask, Point center, Size face_size)
+{
+	Mat mask1, src1;
+	resize(mask, mask1, face_size);
+
+	// ROI selection
+	Rect roi(center.x - face_size.width / 2, center.y - face_size.width / 2, face_size.width, face_size.width);
+	src(roi).copyTo(src1);
+
+	// to make the white region transparent
+	Mat mask2, m, m1;
+	cvtColor(mask1, mask2, CV_BGR2GRAY);
+	threshold(mask2, mask2, 230, 255, CV_THRESH_BINARY_INV);
+
+	vector<Mat> maskChannels(3), result_mask(3);
+	split(mask1, maskChannels);
+	bitwise_and(maskChannels[0], mask2, result_mask[0]);
+	bitwise_and(maskChannels[1], mask2, result_mask[1]);
+	bitwise_and(maskChannels[2], mask2, result_mask[2]);
+	merge(result_mask, m);         //    imshow("m",m);
+
+	mask2 = 255 - mask2;
+	vector<Mat> srcChannels(3);
+	split(src1, srcChannels);
+	bitwise_and(srcChannels[0], mask2, result_mask[0]);
+	bitwise_and(srcChannels[1], mask2, result_mask[1]);
+	bitwise_and(srcChannels[2], mask2, result_mask[2]);
+	merge(result_mask, m1);        //    imshow("m1",m1);
+
+	addWeighted(m, 1, m1, 1, 0, m1);    //    imshow("m2",m1);
+
+	m1.copyTo(src(roi));
+
+	return src;
+}
+
+Mat Filter::FirstFilter(Mat frame,CascadeClassifier face_cascade,CascadeClassifier eye_cascade)
 {
 	Mat frame_gray;
 	cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
@@ -89,4 +130,21 @@ Mat Filter::DetectAndDisplayFirstFilter(Mat frame,CascadeClassifier face_cascade
 	
 }
 
+Mat Filter::SecondFilter(Mat frame, CascadeClassifier face_cascade, CascadeClassifier eye_cascade, Mat image,float scale)
+{	
+	Mat frame_gray;
+	cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
+	DetectFaceAndEyes(frame_gray, face_cascade, eye_cascade);
+	
+	
+	
+	
+	for (size_t i = 0; i < faces.size(); ++i)
+	{
+		Point center =Point (faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
+		frame = PutMask(frame, image, center, Size(faces[i].width, faces[i].height));
+	}
+	return frame;
+
+}
 

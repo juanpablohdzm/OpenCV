@@ -29,11 +29,14 @@ int main(int argc, const char** argv)
 	parser.printMessage();
 	
 	
-	//-- 1. Load the cascades
+	//-- Load the cascades and open capture
 	video.LoadCascades();
 	video.OpenCapture();
 	
-	//-- 2. Read the video stream
+	//-- Load image
+	Mat image = imread("Images/mask.png", IMREAD_UNCHANGED);
+	if (image.empty()) { cout << "Error image not found" << endl; return -1; }
+	//-- Read the video stream
 	Mat frame;
 	do 
 	{
@@ -44,13 +47,12 @@ int main(int argc, const char** argv)
 			return -1;
 		}
 		//-- 3. Apply the classifier to the frame
-		Mat drawing =filter.DetectAndDisplayFirstFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade());
+		Mat drawing =filter.SecondFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade(),image);
 		imshow(window_name, drawing);
 		char c = (char)waitKey(10);
 		if (c == 27) { break; } // escape
 
 	} while (true);
-	
 	return 0;
 }
 

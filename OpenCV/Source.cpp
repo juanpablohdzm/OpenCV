@@ -13,22 +13,30 @@ using namespace cv;
 
 Video video;
 Filter filter;
-int choice = 1;
+int choice = 0;
+
+Mat3b canvas;
+Rect button;
+String buttonText("Click me!");
 
 String window_name = "Capture - Face detection";
 
 
+void OnButtonClick(int event, int x, int y, int flags, void* userdata)
+{
+	if (event == EVENT_LBUTTONDOWN)
+	{
+		if (button.contains(Point(x, y)))
+		{
+			choice++;
+			//rectangle(canvas(button), button, Scalar(0, 0, 255), 2);
+		}
+	}
+	imshow(window_name, canvas);
+}
 
 int main(int argc, const char** argv)
 {
-	CommandLineParser parser(argc, argv,
-		"{help h||}"
-		"{face_cascade|haarcascades/haarcascade_frontalface_alt.xml|}"
-		"{eyes_cascade|haarcascades/haarcascade_eye_tree_eyeglasses.xml|}");
-	cout << "\nThis program demonstrates using the cv::CascadeClassifier class to detect objects (Face + eyes) in a video stream.\n"
-		"You can use Haar or LBP features.\n\n";
-	parser.printMessage();
-	
 	
 	//-- Load the cascades and open capture
 	video.LoadCascades();
@@ -39,9 +47,18 @@ int main(int argc, const char** argv)
 	if (image.empty()) { cout << "Error image not found" << endl; return -1; }
 	//-- Read the video stream
 	Mat frame;
+
 	do 
 	{
 		frame= video.ReadFrame();
+
+		//Create UI
+		button = Rect(0, 0, frame.cols, 50);
+		canvas = Mat3b(frame.rows + button.height, frame.cols, Vec3b(0, 0, 0));
+		canvas(button) = Vec3b(200, 200, 200);
+		putText(canvas(button),buttonText, Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+		
+
 		if (frame.empty())
 		{
 			printf(" --(!) No captured frame -- Break!");
@@ -49,7 +66,7 @@ int main(int argc, const char** argv)
 		}
 		//-- 3. Apply the classifier to the frame
 		Mat drawing;
-		switch (choice)
+		switch (choice%2)
 		{
 		case 0:
 			drawing = filter.FirstFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade());
@@ -60,12 +77,15 @@ int main(int argc, const char** argv)
 		default:
 			break;
 		}
-		imshow(window_name, drawing);
+		drawing.copyTo(canvas(Rect(0, button.height, frame.cols, frame.rows)));
+		imshow(window_name, canvas);
+		setMouseCallback(window_name, OnButtonClick);
 		char c = (char)waitKey(10);
 		if (c == 27) { break; } // escape
 
 	} while (true);
 	return 0;
 }
+
 
 

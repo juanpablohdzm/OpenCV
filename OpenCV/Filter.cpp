@@ -30,40 +30,50 @@ void Filter::DetectFaceAndEyes(Mat frame,CascadeClassifier face_cascade, Cascade
 	}
 }
 
-Mat Filter::PutMask(Mat src,Mat mask, Point center, Size face_size)
+void Filter::PutMask(const Mat &background, const Mat &foreground,Mat &output, Point2i location)
 {
-	Mat mask1, src1;
-	resize(mask, mask1, face_size);
 
-	// ROI selection
-	Rect roi(center.x - face_size.width / 2, center.y - face_size.width / 2, face_size.width, face_size.width);
-	src(roi).copyTo(src1);
+	background.copyTo(output);
 
-	// to make the white region transparent
-	Mat mask2, m, m1;
-	cvtColor(mask1, mask2, CV_BGR2GRAY);
-	threshold(mask2, mask2, 230, 255, CV_THRESH_BINARY_INV);
 
-	vector<Mat> maskChannels(3), result_mask(3);
-	split(mask1, maskChannels);
-	bitwise_and(maskChannels[0], mask2, result_mask[0]);
-	bitwise_and(maskChannels[1], mask2, result_mask[1]);
-	bitwise_and(maskChannels[2], mask2, result_mask[2]);
-	merge(result_mask, m);         //    imshow("m",m);
+	// start at the row indicated by location, or at row 0 if location.y is negative.
+	for (int y = max(location.y, 0); y < background.rows; ++y)
+	{
+		int fY = y - location.y; // because of the translation
 
-	mask2 = 255 - mask2;
-	vector<Mat> srcChannels(3);
-	split(src1, srcChannels);
-	bitwise_and(srcChannels[0], mask2, result_mask[0]);
-	bitwise_and(srcChannels[1], mask2, result_mask[1]);
-	bitwise_and(srcChannels[2], mask2, result_mask[2]);
-	merge(result_mask, m1);        //    imshow("m1",m1);
+		// we are done of we have processed all rows of the foreground image.
+		if (fY >= foreground.rows)
+			break;
 
-	addWeighted(m, 1, m1, 1, 0, m1);    //    imshow("m2",m1);
+		// start at the column indicated by location, 
 
-	m1.copyTo(src(roi));
+		// or at column 0 if location.x is negative.
+		for (int x = max(location.x, 0); x < background.cols; ++x)
+		{
+			int fX = x - location.x; // because of the translation.
 
-	return src;
+			// we are done with this row if the column is outside of the foreground image.
+			if (fX >= foreground.cols)
+				break;
+
+			// determine the opacity of the foregrond pixel, using its fourth (alpha) channel.
+			double opacity =((double)foreground.data[fY * foreground.step + fX * foreground.channels() + 3])/ 255.;
+
+
+			// and now combine the background and foreground pixel, using the opacity, 
+
+			// but only if opacity > 0.
+			for (int c = 0; opacity > 0 && c < output.channels(); ++c)
+			{
+				unsigned char foregroundPx =
+					foreground.data[fY * foreground.step + fX * foreground.channels() + c];
+				unsigned char backgroundPx =
+					background.data[y * background.step + x * background.channels() + c];
+				output.data[y*output.step + output.channels()*x + c] =
+					backgroundPx * (1. - opacity) + foregroundPx * opacity;
+			}
+		}
+	}
 }
 
 Mat Filter::FirstFilter(Mat frame,CascadeClassifier face_cascade,CascadeClassifier eye_cascade)
@@ -133,6 +143,7 @@ Mat Filter::FirstFilter(Mat frame,CascadeClassifier face_cascade,CascadeClassifi
 Mat Filter::SecondFilter(Mat frame, CascadeClassifier face_cascade, CascadeClassifier eye_cascade, Mat image,float scale)
 {	
 	Mat frame_gray;
+	Mat drawing;
 	cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
 	DetectFaceAndEyes(frame_gray, face_cascade, eye_cascade);
 	
@@ -141,8 +152,10 @@ Mat Filter::SecondFilter(Mat frame, CascadeClassifier face_cascade, CascadeClass
 	
 	for (size_t i = 0; i < faces.size(); ++i)
 	{
-		Point center =Point (faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
-		frame = PutMask(frame, image, center, Size(faces[i].width, faces[i].height));
+		resize(image, image, Size(faces[i].width, faces[i].height));
+		Point2i center = Point2i(faces[i].x, faces[i].y);
+		PutMask(frame, image, drawing, center);
+		frame = drawing;
 	}
 	return frame;
 

@@ -13,6 +13,7 @@ using namespace cv;
 
 Video video;
 Filter filter;
+int choice = 1;
 
 String window_name = "Capture - Face detection";
 
@@ -47,7 +48,18 @@ int main(int argc, const char** argv)
 			return -1;
 		}
 		//-- 3. Apply the classifier to the frame
-		Mat drawing =filter.SecondFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade(),image);
+		Mat drawing;
+		switch (choice)
+		{
+		case 0:
+			drawing = filter.FirstFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade());
+			break;
+		case 1:
+			drawing = filter.SecondFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade(),image);
+			break;
+		default:
+			break;
+		}
 		imshow(window_name, drawing);
 		char c = (char)waitKey(10);
 		if (c == 27) { break; } // escape

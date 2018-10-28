@@ -24,7 +24,7 @@ public:
 
 private:
 	void DetectFaceAndEyes(Mat frame, CascadeClassifier face_cascade, CascadeClassifier eye_cascade);
-	Mat PutMask(Mat src, Mat mask, Point center, Size face_size);
+	void PutMask(const Mat &background, const Mat &foreground, Mat &output, Point2i location);
 
 	vector<Rect> faces;
 	vector<Rect> eyes;

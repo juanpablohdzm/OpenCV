@@ -66,7 +66,7 @@ int main(int argc, const char** argv)
 		}
 		//-- 3. Apply the classifier to the frame
 		Mat drawing;
-		switch (choice%2)
+		switch (choice%3)
 		{
 		case 0:
 			drawing = filter.FirstFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade());
@@ -74,6 +74,8 @@ int main(int argc, const char** argv)
 		case 1:
 			drawing = filter.SecondFilter(frame, video.GetFace_cascade(), video.GetEyes_cascade(),image);
 			break;
+		case 2:
+			drawing = filter.ThirdFilter(frame);
 		default:
 			break;
 		}

@@ -1,7 +1,10 @@
-﻿  Source.cpp
+﻿  Filter.cpp
+c:\users\juan pablo\documents\visual studio 2017\projects\opencvfilters\opencv\filter.cpp(77): warning C4244: '=': conversion from 'double' to 'uchar', possible loss of data
+  Source.cpp
 c:\users\juan pablo\documents\visual studio 2017\projects\opencvfilters\opencv\source.cpp(59): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
           ]
+  Generating Code...
   OpenCV.vcxproj -> C:\Users\Juan Pablo\Documents\Visual Studio 2017\Projects\OpenCVFilters\x64\Debug\OpenCV.exe

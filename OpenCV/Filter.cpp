@@ -6,9 +6,13 @@
 
 Filter::Filter()
 {
-	Point center(0, 0);
-	orientation.push_back(center);
-	orientation.push_back(center);
+
+	Y_MIN = 0;
+	Y_MAX = 255;
+	Cr_MIN = 133;
+	Cr_MAX = 173;
+	Cb_MIN = 77;
+	Cb_MAX = 127;
 }
 
 
@@ -159,5 +163,15 @@ Mat Filter::SecondFilter(Mat frame, CascadeClassifier face_cascade, CascadeClass
 	}
 	return frame;
 
+}
+
+Mat Filter::ThirdFilter(Mat frame)
+{
+	Mat skin, dstImage;
+	cvtColor(frame, skin, COLOR_BGR2YCrCb);
+	inRange(skin, Scalar(Y_MIN, Cr_MIN, Cb_MIN), Scalar(Y_MAX, Cr_MAX, Cb_MAX), skin);
+
+	frame.copyTo(dstImage, skin);
+	return dstImage;
 }
 
